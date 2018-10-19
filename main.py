@@ -7,14 +7,14 @@ from operator import itemgetter
 
 # Easy color printing functions
 #colors = ['grey','red','green','yellow','blue','magenta','cyan','white']
-print_grey = lambda x: cprint(x, 'grey')  # Not very visible
-print_red = lambda x: cprint(x, 'red')
-print_green = lambda x: cprint(x, 'green')
-print_yellow = lambda x: cprint(x, 'yellow')
-print_blue = lambda x: cprint(x, 'blue')
-print_magenta = lambda x: cprint(x, 'magenta')
+print_grey = lambda x: cprint(x, 'grey')  # Not very visible; DONT USE
+print_red = lambda x: cprint(x, 'red')  # ERRORS
+print_green = lambda x: cprint(x, 'green')  # Sucessful actions
+print_yellow = lambda x: cprint(x, 'yellow')  # Catching edge cases
+print_blue = lambda x: cprint(x, 'blue')  # Player actions
+print_magenta = lambda x: cprint(x, 'magenta')  # Test output
 print_cyan = lambda x: cprint(x, 'cyan')
-print_white = lambda x: cprint(x, 'white')
+print_white = lambda x: cprint(x, 'white')  # Normal text
 
 
 
@@ -49,7 +49,7 @@ class Game:
         # Game Loop
         if self.debug:
             while True:
-                print_red('Debug mode is not implemented currently. Sorry!')
+                print_yellow('Debug mode is not implemented currently. Sorry!')
                 break
 
         if not self.debug:
@@ -65,17 +65,6 @@ class Game:
                 print_white('yo this is a ' + str(10) + ' sentence')
                 """
 
-                #Set current player
-                if self.active_player == self.num_players:
-                    self.active_player = 0
-                else:
-                    self.active_player = self.active_player + 1
-
-                #Set current phase
-                if self.phase == 3:
-                    self.phase = 1
-                else:
-                    self.phase = self.phase + 1
 
                 # PLOTTING PHASE
                 if self.phase == 1:
@@ -88,6 +77,20 @@ class Game:
                     self.cleanupPhase()
                 else:
                     print_red('ERROR: Phase changing is broken!')
+
+
+                #Set current player
+                if self.active_player == self.num_players:
+                    self.active_player = 0
+                else:
+                    self.active_player = self.active_player + 1
+
+                #Set current phase
+                if self.phase == 3:
+                    self.phase = 1
+                else:
+                    self.phase = self.phase + 1
+
 
     def initGame(self):
         input = raw_input('Enter number of players: ')
@@ -111,6 +114,27 @@ class Game:
             for i in xrange(3):
                 player.hand.append(self.deck.pop())
 
+        #Check for jokers
+        low_num_buf = []
+        for player in self.players:
+            temp_tuple = (player.p_num, player.getLowestValueCard())
+            low_num_buf.append(temp_tuple)
+        print_magenta('low_num_buf: ' + str(low_num_buf))
+
+        #Replace jokers
+        while min(low_num_buf,key=itemgetter(1))[1] < 2:
+            print_yellow('Joker detected!')
+            for player in self.players:
+                for card in player.hand:
+                    if card.value < 2:
+                        player.hand.remove(card)
+                        player.hand.append(self.deck.pop())
+            low_num_buf = []
+            for player in self.players:
+                temp_tuple = (player.p_num, player.getLowestValueCard())
+                low_num_buf.append(temp_tuple)
+            print_magenta('low_num_buf: ' + str(low_num_buf))
+
         #Each player games +1 affinity to the drawn card suits
         for player in self.players:
             for card in player.hand:
@@ -123,16 +147,16 @@ class Game:
                 elif card.suit == 'Diamond':
                     player.affinities[3] = player.affinities[3] + 1
                 else:
-                    print_red('ERROR: Affinity attribution is broken!') #NOTE: Need to add jokers into this
+                    print_red('ERROR: Affinity attribution is broken!')
 
         #The player with the highest value card drawn goes first
         high_num_buf = []
         for player in self.players:
             temp_tuple = (player.p_num, player.getHighestValueCard())
             high_num_buf.append(temp_tuple)
+        print_magenta('high_num_buf: ' + str(high_num_buf))
 
-        for num in xrange(len(high_num_buf)):
-            max(high_num_buf,key=itemgetter(1))
+        #Check for ties
         is_tie = False
         tied_player_buf = []
         for i,j in enumerate(high_num_buf):
@@ -143,6 +167,7 @@ class Game:
 
         #Keep drawing to break ties
         if is_tie:
+            print_yellow('Tie detected!')
             while self.player_going_first == None:
                 for player in self.players:
                     player.hand = []
@@ -189,7 +214,7 @@ class Game:
 
 
     def plottingPhase(self):
-        print_green('Phase 1: ' + str(self.players[self.active_player].name) + '\'s turn')
+        print_white('Phase 1: ' + str(self.players[self.active_player].name) + '\'s turn')
         #print_white(self.players[0])
         #print_white(self.players[1])
         pass
@@ -296,9 +321,16 @@ class Player:
                 current_highest = card.value
         return current_highest
 
+    def getLowestValueCard(self):
+        current_lowest = 15  #Picked a number higher than the highest
+        for card in self.hand:
+            if card.value < current_lowest:
+                current_lowest = card.value
+        return current_lowest
+
 class Card:
     def __init__(self, value, suit):
-        self.value = value  # 1-13; where 1 is Joker, 2-10 are 2-10, and 11-14 are Jack, Queen, King, Ace respectively
+        self.value = value  #1-13; where 1 is Joker, 2-10 are 2-10, and 11-14 are Jack, Queen, King, Ace respectively
         self.suit = suit
 
     def __str__(self):

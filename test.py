@@ -20,7 +20,7 @@ list = [(0,5),(1,10),(2,10)] #(1,10),(2,10)
 result = []
 for i,j in enumerate(list):
     #print j[1]
-    #print max(list,key=itemgetter(1))
+    print max(list,key=itemgetter(1))
     if j[1] == max(list,key=itemgetter(1))[1]:
         result.append(j)
 print result
