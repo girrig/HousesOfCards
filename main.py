@@ -214,15 +214,41 @@ class Game:
 
 
     def plottingPhase(self):
+        print_white(self.players[self.active_player])
         print_white('Phase 1: ' + str(self.players[self.active_player].name) + '\'s turn')
-        #print_white(self.players[0])
-        #print_white(self.players[1])
-        pass
         #Choose 1
+        while(True):
+            print_white('What would you like to do?')
+            print_white('1) Draw a resource card')
+            print_white('2) Offer a trade to the table')
+            print_white('3) Use a resource card\'s special ability')
+            print_white('4) Purchase a Usurper\'s Chance card')
+            input = raw_input('Choose a number: ')
             #Current player draws a resource cards
+            if input == '1':
+                self.players[self.active_player].hand.append(self.deck.pop())
+                break
             #Current player offers to trade to the table
+            if input == '2':
+                print_yellow('Currently not implemented!')
+                pass
             #Current player uses a resource cards ability
+            if input == '3':
+                print_yellow('Currently not implemented!')
+                pass
             #Current player buys a Usurper's Chance card
+            if input == '4':
+                if self.active_player.points < 7:
+                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.active_player.points) + ' points.')
+                else:
+                    print_white('Are you sure you want to buy a Usurper\s Chance card for 7 victory points?')
+                    input = raw_input('(y/n): ')
+                    if input == 'y':
+                        self.players[self.active_player].points = self.players[self.active_player].points - 7
+                        self.players[self.active_player].hand.append(Card(15, 'Usurper\'s Chance'))
+                    break
+
+
 
     def questingPhase(self):
         pass
@@ -330,7 +356,7 @@ class Player:
 
 class Card:
     def __init__(self, value, suit):
-        self.value = value  #1-13; where 1 is Joker, 2-10 are 2-10, and 11-14 are Jack, Queen, King, Ace respectively
+        self.value = value  #1-15; where 1 is Joker, 2-10 are 2-10, and 11-14 are Jack, Queen, King, Ace respectively; 15 is the Usurper's Chance card
         self.suit = suit
 
     def __str__(self):
