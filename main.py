@@ -79,15 +79,16 @@ class Game:
                     print_red('ERROR: Phase changing is broken!')
 
 
-                #Set current player
-                if self.active_player == self.num_players:
-                    self.active_player = 0
-                else:
-                    self.active_player = self.active_player + 1
-
                 #Set current phase
                 if self.phase == 3:
                     self.phase = 1
+
+                    #Set current player
+                    if self.active_player == self.num_players:
+                        self.active_player = 0
+                    else:
+                        self.active_player = self.active_player + 1
+                
                 else:
                     self.phase = self.phase + 1
 
@@ -251,6 +252,7 @@ class Game:
 
 
     def questingPhase(self):
+        print_white(self.players[self.active_player])
         pass
         #Current player chooses 1
             #Current player attempts to stop self.calamity by spending a resource card
