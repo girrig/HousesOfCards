@@ -33,6 +33,7 @@ class Game:
         self.phase = None  # 0=Setup; 1=Plotting; 2=Questing; 3=Cleanup
         self.deck = []  # Array of Card objects
         self.calamity = None  # 1-100
+        self.game_over = False
 
 
     '''
@@ -188,7 +189,7 @@ class Game:
                         tied_player_buf.append(j)
 
                 if len(tied_player_buf) > 1:
-                    pass
+                    continue
                 else:
                     self.player_going_first = tied_player_buf[0][0]
                     self.active_player = self.players[self.player_going_first]
@@ -216,8 +217,9 @@ class Game:
 
     def plottingPhase(self):
         print_white(self.active_player)
-        print_white('Phase 1: ' + str(self.active_player.name) + '\'s turn')
-        #Choose 1
+        print_white('Plotting Phase: ' + str(self.active_player.name) + '\'s turn')
+
+        #Current player chooses 1
         while(True):
             print_white('What would you like to do?')
             print_white('1) Draw a resource card')
@@ -225,20 +227,21 @@ class Game:
             print_white('3) Use a resource card\'s special ability')
             print_white('4) Purchase a Usurper\'s Chance card')
             input = raw_input('Choose a number: ')
+
             #Current player draws a resource cards
             if input == '1':
                 self.active_player.hand.append(self.deck.pop())
                 break
             #Current player offers to trade to the table
-            if input == '2':
+            elif input == '2':
                 print_yellow('Currently not implemented!')
-                pass
+                continue
             #Current player uses a resource cards ability
-            if input == '3':
+            elif input == '3':
                 print_yellow('Currently not implemented!')
-                pass
+                continue
             #Current player buys a Usurper's Chance card
-            if input == '4':
+            elif input == '4':
                 if self.active_player.points < 7:
                     print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.active_player.points) + ' points.')
                 else:
@@ -253,43 +256,168 @@ class Game:
 
     def questingPhase(self):
         print_white(self.active_player)
-        pass
+        print_white('Questing Phase: ' + str(self.active_player.name) + '\'s turn')
+
         #Current player chooses 1
+        while(True):
+            print_white('What would you like to do?')
+            print_white('1) Spend a resource card and try to stop the calamity')
+            print_white('2) Attempt to search for more resource cards')
+            print_white('3) Activate a Usurper\'s Chance card and try to take the throne')
+            input = raw_input('Choose a number: ')
+
             #Current player attempts to stop calamity by spending a resource card
+            if input == '1':
+                card = None
                 #Current player can only spend 1 resource card
+                while(True):
+                    print_white('^^^Your hand^^^')
+                    for x in xrange(0,len(self.active_player.hand)):
+                        print_white(str(x+1) + ') ' + self.active_player.hand[x].getName())
+                    input = raw_input('Pick a card to use: ')
+                    card = int(input) - 1
+                    if self.active_player.hand[card].getSuitNum() == -1:
+                        print_red('Please choose a normal card.')
+                        pass
+                    else:
+                        break
+
                 #Current player roll 2d6+affinity for card suit
-                    #2-6 quest failed
-                        #Other players can barter to save the quest from failing
-                            #Other player spends a resource card to add resource card value+1 to current players failed roll
-                            #Current player can accept, reject, or counteroffer
-                            #Player offers are asynchronous
-                        #If noone helps
-                            #Current player discards the played resource card
-                            #End current players turn
-                    #7-9 quest success
+                print_white('Rolling 2d6 plus your affinity to ' + self.active_player.hand[card].suit + '(+' + str(self.active_player.affinities[self.active_player.hand[card].getSuitNum()]) + ').')
+                die1 = random.randint(1,6)
+                die2 = random.randint(1,6)
+                roll = die1 + die2 + self.active_player.affinities[self.active_player.hand[card].getSuitNum()]
+                print_magenta(str(roll))
+
+                #2-6 quest failed
+                if roll <= 6:
+                    print_yellow('Quest failed! You rolled a ' + str(roll) + '.')
+                    pass
+                    #Other players can barter to save the quest from failing
+                        #Other player spends a resource card to add resource card value+1 to current players failed roll
+                        #Current player can accept, reject, or counteroffer
+                        #Player offers are asynchronous
+                    #If noone helps
+                        #Current player discards the played resource card
+                        #End current players turn
+
+                #7-9 quest success
+                elif roll > 6 and roll < 10:
+                    while(True):
+                        print_green('Success! You rolled a ' + str(roll) + '. Choose a reward:')
                         #Current player chooses 1
-                            #Current player gains 1 victory points
-                            #Current player draws 2 resource cards
-                    #10+
-                        #Current player gains 1 victory point and draws 1 resource card
-            #Current player attemps to search for more recource cards
-                # Current player rolls a 2d6
-                    #2-6
-                        #Current player draws 0 resource cards
-                    #7-9
-                        #Current player draws 1 resource cards
-                    #10+
+                        print_white('1) Gain 1 victory point')
+                        print_white('2) Draw 2 resource cards')
+                        input = raw_input('Which would you like?: ')
+                        #Current player gains 1 victory points
+                        if input == '1':
+                            print_green('You gain 1 victory point.')
+                            self.active_player.points= self.active_player.points + 1
+                            break
                         #Current player draws 2 resource cards
+                        elif input == '2':
+                            print_green('You find 2 resource cards.')
+                            self.active_player.hand.append(self.deck.pop())
+                            self.active_player.hand.append(self.deck.pop())
+                            break
+                        else:
+                            print_red('Please choose reward 1 or reward 2.')
+
+                #10+ great success
+                elif roll >= 10:
+                    print_green('Great Success!! You rolled a ' + str(roll) + '.')
+                    print_white('You gained 1 victory point and found 1 resource card.')
+                    #Current player gains 1 victory point and draws 1 resource card
+                    self.active_player.points= self.active_player.points + 1
+                    self.active_player.hand.append(self.deck.pop())
+
+                del self.active_player.hand[card]
+                break
+
+            #Current player attemps to search for more recource cards
+            elif input == '2':
+                # Current player rolls a 2d6
+                print_white('Rolling 2d6.')
+                die1 = random.randint(1,6)
+                die2 = random.randint(1,6)
+                roll = die1 + die2
+                print_magenta(str(roll))
+
+                #2-6
+                if roll <= 6:
+                    print_red('You rolled a ' + str(roll) + ' and failed to find more resource cards.')
+                    #Current player draws 0 resource cards
+                #7-9
+                elif roll > 6 and roll < 10:
+                    print_green('You rolled a ' + str(roll) + ' and found 1 resource card.')
+                    #Current player draws 1 resource cards
+                    self.active_player.hand.append(self.deck.pop())
+                #10+
+                elif roll >= 10:
+                    print_green('You rolled a ' + str(roll) + 'and found 2 resource cards!')
+                    #Current player draws 2 resource cards
+                    self.active_player.hand.append(self.deck.pop())
+                    self.active_player.hand.append(self.deck.pop())
+
+                break
+
             #Activate Usurper's Chance card
+            elif input == '3':
+                if self.active_player.getHighestValueCard() < 15:
+                    print_yellow('You do not have a Usurper\'s Chance card. Please choose a different option.')
+                    continue
+                print_white('You attempt to take the throne!!')
                 #Current player must roll 8+ on 2d6+(Up to 3 victory points)
-                    #2-7
-                        #All other players draw 1 resource card
-                        #Current player discards the played Usurper's Chance card
-                    #8+
-                        #Current player wins the game
+                print_white('Would you like to wager any victory points to add a bonus to your roll? (up to +3). The victory points wagered will be consumed on use.')
+                input = raw_input('(y/n): ')
+                wagered_vps = 0
+                if input == 'y':
+                    input = raw_input('Hpw many victory points would you like to use? (up to 3): ')
+                    if input == 1:
+                        self.active_player.points = self.active_player.points - 1
+                        wagered_vps = wagered_vps + 1
+                    elif input == 2:
+                        self.active_player.points = self.active_player.points - 2
+                        wagered_vps = wagered_vps + 2
+                    elif input == 3:
+                        self.active_player.points = self.active_player.points - 3
+                        wagered_vps = wagered_vps + 3
+                    else:
+                        print_red('Assigning extra victory points to Usurper\'s Chance is broken!')
+
+                print_white('Rolling 2d6 plus any wagered victory points' + '(+' + str(wagered_vps) + ').')
+                die1 = random.randint(1,6)
+                die2 = random.randint(1,6)
+                roll = die1 + die2 + wagered_vps
+                print_magenta(str(roll))
+
+                #2-7
+                if roll <= 7:
+                    print_red('You failed to take the throne! You rolled a ' + str(roll) + '.')
+                    print_white('All other players get to draw one resource card.')
+                    #All other players draw 1 resource card
+                    for player in self.players:
+                        if self.active_player.p_num == player.p_num:
+                            pass
+                        player.hand.append(self.deck.pop())
+                    #Current player discards the played Usurper's Chance card
+                    for card in self.active_player.hand:
+                        if card.value == 15:
+                            player.hand.remove(card)
+                #8+
+                elif roll >= 8:
+                    print_green('You roll a... ' + str(roll) + '!!!')
+                    #Current player wins the game
+                    print_green('You have taken the throne and won the game!')
+                    self.game_over = True
+
+                break
+
 
     def cleanupPhase(self):
+        print_white(self.active_player)
         tempy = input('block')
+        #Check to see if the game has been won
         #If the calamity was stopped, roll a d100 for new calamity; otherwise pass
         #If the deck is empty and all players hands are empty, the player with the most victory points wins
             #Usurper Chance cards count for 10 victory points
@@ -359,7 +487,7 @@ class Player:
 class Card:
     def __init__(self, value, suit):
         self.value = value  #1-15; where 1 is Joker, 2-10 are 2-10, and 11-14 are Jack, Queen, King, Ace respectively; 15 is the Usurper's Chance card
-        self.suit = suit
+        self.suit = suit  #Spade, Heart, Club, Diamond for normal cards; Non-Colored, Colored for jokers; Usurper's Chance
 
     def __str__(self):
         return str(self.__dict__)
@@ -367,22 +495,37 @@ class Card:
     def __repr__(self):
         return self.__str__()
 
+    # Returns a human readable string of the card
     def getName(self):
         if 1 < self.value < 11:
-            print 'The card is the ' + str(self.value) + ' of ' + self.suit + 's.'
+            return '' + str(self.value) + ' of ' + self.suit + 's'
         elif self.value == 11:
-            print 'The card is the Jack of ' + self.suit + 's.'
+            return 'Jack of ' + self.suit + 's'
         elif self.value == 12:
-            print 'The card is the Queen of ' + self.suit + 's.'
+            return 'Queen of ' + self.suit + 's'
         elif self.value == 13:
-            print 'The card is the King of ' + self.suit + 's.'
+            return 'King of ' + self.suit + 's'
         elif self.value == 14:
-            print 'The card is the Ace of ' + self.suit + 's.'
+            return 'Ace of ' + self.suit + 's'
         elif self.value == 1:
-            print 'The card is the ' + self.suit + ' Joker.'
+            return '' + self.suit + ' Joker'
+        elif self.value == 15:
+            return 'Usurper\'s Chance'
         else:
             print 'ERROR: Something is fucked in the Card Class getName() function'
 
+    # Returns the correct index number for the Player affinity array; if not a normal card, returns -1
+    def getSuitNum(self):
+        if self.suit == 'Spade':
+            return 0
+        elif self.suit == 'Heart':
+            return 1
+        elif self.suit == 'Club':
+            return 2
+        elif self.suit == 'Diamond':
+            return 3
+        else:
+            return -1
 
 
 if __name__ == '__main__':
