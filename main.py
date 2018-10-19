@@ -88,7 +88,7 @@ class Game:
                         self.active_player = 0
                     else:
                         self.active_player = self.active_player + 1
-                
+
                 else:
                     self.phase = self.phase + 1
 
@@ -239,8 +239,8 @@ class Game:
                 pass
             #Current player buys a Usurper's Chance card
             if input == '4':
-                if self.active_player.points < 7:
-                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.active_player.points) + ' points.')
+                if self.players[self.active_player].points < 7:
+                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.players[self.active_player].points) + ' points.')
                 else:
                     print_white('Are you sure you want to buy a Usurper\s Chance card for 7 victory points?')
                     input = raw_input('(y/n): ')
