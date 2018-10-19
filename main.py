@@ -29,7 +29,7 @@ class Game:
         self.player_going_first = None
 
         # Game variables
-        self.active_player = None  # Starts at 0
+        self.active_player = None  # Player object
         self.phase = None  # 0=Setup; 1=Plotting; 2=Questing; 3=Cleanup
         self.deck = []  # Array of Card objects
         self.calamity = None  # 1-100
@@ -84,10 +84,10 @@ class Game:
                     self.phase = 1
 
                     #Set current player
-                    if self.active_player == self.num_players:
-                        self.active_player = 0
+                    if self.active_player.p_num == self.num_players:
+                        self.active_player = self.players[0]
                     else:
-                        self.active_player = self.active_player + 1
+                        self.active_player = self.players[self.active_player + 1]
 
                 else:
                     self.phase = self.phase + 1
@@ -191,10 +191,10 @@ class Game:
                     pass
                 else:
                     self.player_going_first = tied_player_buf[0][0]
-                    self.active_player = self.player_going_first
+                    self.active_player = self.players[self.player_going_first]
         else:
             self.player_going_first = tied_player_buf[0][0]
-            self.active_player = self.player_going_first
+            self.active_player = self.players[self.player_going_first]
 
         #Empty player hands
         for player in self.players:
@@ -215,8 +215,8 @@ class Game:
 
 
     def plottingPhase(self):
-        print_white(self.players[self.active_player])
-        print_white('Phase 1: ' + str(self.players[self.active_player].name) + '\'s turn')
+        print_white(self.active_player)
+        print_white('Phase 1: ' + str(self.active_player.name) + '\'s turn')
         #Choose 1
         while(True):
             print_white('What would you like to do?')
@@ -227,7 +227,7 @@ class Game:
             input = raw_input('Choose a number: ')
             #Current player draws a resource cards
             if input == '1':
-                self.players[self.active_player].hand.append(self.deck.pop())
+                self.active_player.hand.append(self.deck.pop())
                 break
             #Current player offers to trade to the table
             if input == '2':
@@ -239,23 +239,23 @@ class Game:
                 pass
             #Current player buys a Usurper's Chance card
             if input == '4':
-                if self.players[self.active_player].points < 7:
-                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.players[self.active_player].points) + ' points.')
+                if self.active_player.points < 7:
+                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.active_player.points) + ' points.')
                 else:
                     print_white('Are you sure you want to buy a Usurper\s Chance card for 7 victory points?')
                     input = raw_input('(y/n): ')
                     if input == 'y':
-                        self.players[self.active_player].points = self.players[self.active_player].points - 7
-                        self.players[self.active_player].hand.append(Card(15, 'Usurper\'s Chance'))
+                        self.active_player.points = self.active_player.points - 7
+                        self.active_player.hand.append(Card(15, 'Usurper\'s Chance'))
                     break
 
 
 
     def questingPhase(self):
-        print_white(self.players[self.active_player])
+        print_white(self.active_player)
         pass
         #Current player chooses 1
-            #Current player attempts to stop self.calamity by spending a resource card
+            #Current player attempts to stop calamity by spending a resource card
                 #Current player can only spend 1 resource card
                 #Current player roll 2d6+affinity for card suit
                     #2-6 quest failed
@@ -290,8 +290,8 @@ class Game:
 
     def cleanupPhase(self):
         tempy = input('block')
-        #If the self.calamity was stopped, roll a d100 for new self.calamity; otherwise pass
-        #If the self.deck is empty and all players hands are empty, the player with the most victory points wins
+        #If the calamity was stopped, roll a d100 for new calamity; otherwise pass
+        #If the deck is empty and all players hands are empty, the player with the most victory points wins
             #Usurper Chance cards count for 10 victory points
 
 
