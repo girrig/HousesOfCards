@@ -1,5 +1,6 @@
 # LINK TO PDF:   https://www.dropbox.com/s/tn5lg8jbl8ytmrt/Houses%20of%20Cards.docx?dl=0
 
+import sys
 import random
 from termcolor import cprint
 from operator import itemgetter
@@ -9,29 +10,29 @@ from operator import itemgetter
 # colors = ['grey','red','green','yellow','blue','magenta','cyan','white']
 print_grey = lambda x: cprint(x, 'grey')  # Not very visible; DONT USE
 print_red = lambda x: cprint(x, 'red')  # ERRORS
-print_green = lambda x: cprint(x, 'green')  # Sucessful actions
+print_green = lambda x: cprint(x, 'green')  # Positive text
 print_yellow = lambda x: cprint(x, 'yellow')  # Catching edge cases
-print_blue = lambda x: cprint(x, 'blue')  # Player actions
+print_blue = lambda x: cprint(x, 'blue')  # Not very visible; DONT USE
 print_magenta = lambda x: cprint(x, 'magenta')  # Test output
-print_cyan = lambda x: cprint(x, 'cyan')
+print_cyan = lambda x: cprint(x, 'cyan')  # Player actions and Phase changes; currently can't find a way to make input colored
 print_white = lambda x: cprint(x, 'white')  # Normal text
 
 
 class Game:
     def __init__(self):
-        # Dev variables
-        self.debug = False  # Autoplay
-
         # Meta variables
         self.num_players = None
         self.players = []  # Array of Player objects
         self.player_going_first = None
 
         # Game variables
+        self.max_players = 4
         self.active_player = None  # Player object
         self.phase = None  # 0=Setup; 1=Plotting; 2=Questing; 3=Cleanup
         self.deck = []  # Array of Card objects
         self.calamity = None  # 1-100
+        self.calamity_stopped = False
+        self.start_endgame = False
         self.game_over = False
 
     '''
@@ -46,66 +47,70 @@ class Game:
         # GAME START
 
         # Game Loop
-        if self.debug:
-            while True:
-                print_yellow('Debug mode is not implemented currently. Sorry!')
-                break
+        while True:
+            """
+            print_grey('yo this is a ' + str(10) + ' sentence')
+            print_red('yo this is a ' + str(10) + ' sentence')
+            print_green('yo this is a ' + str(10) + ' sentence')
+            print_yellow('yo this is a ' + str(10) + ' sentence')
+            print_blue('yo this is a ' + str(10) + ' sentence')
+            print_magenta('yo this is a ' + str(10) + ' sentence')
+            print_cyan('yo this is a ' + str(10) + ' sentence')
+            print_white('yo this is a ' + str(10) + ' sentence')
+            """
 
-        if not self.debug:
-            while True:
-                """
-                print_grey('yo this is a ' + str(10) + ' sentence')
-                print_red('yo this is a ' + str(10) + ' sentence')
-                print_green('yo this is a ' + str(10) + ' sentence')
-                print_yellow('yo this is a ' + str(10) + ' sentence')
-                print_blue('yo this is a ' + str(10) + ' sentence')
-                print_magenta('yo this is a ' + str(10) + ' sentence')
-                print_cyan('yo this is a ' + str(10) + ' sentence')
-                print_white('yo this is a ' + str(10) + ' sentence')
-                """
+            # PLOTTING PHASE
+            if self.phase == 1:
+                self.plottingPhase()
+            # QUESTING PHASE
+            elif self.phase == 2:
+                self.questingPhase()
+            # UPKEEP PHASE
+            elif self.phase == 3:
+                self.upkeepPhase()
+            else:
+                print_red('ERROR: Phase changing is broken!')
 
-                # PLOTTING PHASE
-                if self.phase == 1:
-                    self.plottingPhase()
-                # QUESTING PHASE
-                elif self.phase == 2:
-                    self.questingPhase()
-                # CLEANUP PHASE
-                elif self.phase == 3:
-                    self.cleanupPhase()
+            # Set current phase
+            if self.phase == 3:
+                self.phase = 1
+
+                # Set current player
+                if self.active_player.p_num == self.num_players - 1:
+                    self.active_player = self.players[0]
                 else:
-                    print_red('ERROR: Phase changing is broken!')
+                    self.active_player = self.players[self.active_player.p_num + 1]
 
-                # Set current phase
-                if self.phase == 3:
-                    self.phase = 1
-
-                    # Set current player
-                    if self.active_player.p_num == self.num_players:
-                        self.active_player = self.players[0]
-                    else:
-                        self.active_player = self.players[self.active_player + 1]
-
-                else:
-                    self.phase = self.phase + 1
+            else:
+                self.phase = self.phase + 1
 
     def initGame(self):
-        input = input('Enter number of players: ')
+        num_players = None
+        while(True):
+            num_players = input('Enter number of players(1-4): ')
+            if not num_players.isdigit():
+                print_red('Please enter a number!')
+                continue
+            if int(num_players) < 1:
+                print_red('Please pick a number greater than 0.')
+                continue
+            if int(num_players) > self.max_players:
+                print_red('The maximum number of players is 4. Please pick a smaller amount of players.')
+                continue
 
-        if input == '0':
-            self.debug = True
-            self.num_players = 0
-        else:
-            self.num_players = int(input)
-            for num in range(0, self.num_players):
-                name = input('Enter name for Player ' + str(num + 1) + ':')
-                player = Player(name, num, [0, 0, 0, 0], 0, [])
-                self.players.append(player)
+            break
+
+        self.num_players = int(num_players)
+        for i in range(0, self.num_players):
+            name = input('Enter name for Player ' + str(i + 1) + ':')
+            player = Player(name, i, [0, 0, 0, 0], 0, [])
+            self.players.append(player)
 
         self.dealDeck()
         self.shuffleDeck()
 
     def setupPhase(self):
+        print_cyan('Setup Phase')
         # Each player draws 3 cards
         for player in self.players:
             for i in range(3):
@@ -116,7 +121,6 @@ class Game:
         for player in self.players:
             temp_tuple = (player.p_num, player.getLowestValueCard())
             low_num_buf.append(temp_tuple)
-        print_magenta('low_num_buf: ' + str(low_num_buf))
 
         # Replace jokers
         while min(low_num_buf, key=itemgetter(1))[1] < 2:
@@ -130,7 +134,6 @@ class Game:
             for player in self.players:
                 temp_tuple = (player.p_num, player.getLowestValueCard())
                 low_num_buf.append(temp_tuple)
-            print_magenta('low_num_buf: ' + str(low_num_buf))
 
         # Each player games +1 affinity to the drawn card suits
         for player in self.players:
@@ -151,7 +154,6 @@ class Game:
         for player in self.players:
             temp_tuple = (player.p_num, player.getHighestValueCard())
             high_num_buf.append(temp_tuple)
-        print_magenta('high_num_buf: ' + str(high_num_buf))
 
         # Check for ties
         is_tie = False
@@ -160,7 +162,6 @@ class Game:
             if j[1] == max(high_num_buf, key=itemgetter(1))[1]:
                 tied_player_buf.append(j)
         if len(tied_player_buf) > 1:
-            print_magenta('tied_player_buf: ' + str(tied_player_buf))
             is_tie = True
 
         # Keep drawing to break ties
@@ -174,18 +175,14 @@ class Game:
                     self.players[tied_player_buf[i][0]].hand.append(self.deck.pop())
 
                 high_num_buf = []
-                print_magenta('tied_player_buf loop0: ' + str(tied_player_buf))
                 for i in range(0, len(tied_player_buf)):
                     temp_tuple = (tied_player_buf[i][0], self.players[tied_player_buf[i][0]].getHighestValueCard())
-                    print_magenta(str(temp_tuple))
                     high_num_buf.append(temp_tuple)
-                print_magenta('high_num_buf loop: ' + str(high_num_buf))
 
                 tied_player_buf = []
                 for i, j in enumerate(high_num_buf):
                     if j[1] == max(high_num_buf, key=itemgetter(1))[1]:
                         tied_player_buf.append(j)
-                print_magenta('tied_player_buf loop: ' + str(tied_player_buf))
 
                 if len(tied_player_buf) > 1:
                     continue
@@ -214,8 +211,7 @@ class Game:
         self.phase = 1
 
     def plottingPhase(self):
-        print_white(self.active_player)
-        print_white('Plotting Phase: ' + str(self.active_player.name) + '\'s turn')
+        print_cyan('Plotting Phase: ' + str(self.active_player.name) + '\'s turn')
 
         # Current player chooses 1
         while(True):
@@ -224,35 +220,42 @@ class Game:
             print_white('2) Offer a trade to the table')
             print_white('3) Use a resource card\'s special ability')
             print_white('4) Purchase a Usurper\'s Chance card')
-            input = input('Choose a number: ')
+            choice = input('Choose a number: ')
 
             # Current player draws a resource cards
-            if input == '1':
-                self.active_player.hand.append(self.deck.pop())
-                break
+            if choice == '1':
+                if len(self.deck) > 0:
+                    self.active_player.hand.append(self.deck.pop())
+                    break
+                else:
+                    print_yellow('The deck is empty, sorry. Please choose another option.')
+                    continue
             # Current player offers to trade to the table
-            elif input == '2':
-                print_yellow('Currently not implemented!')
-                continue
-            # Current player uses a resource cards ability
-            elif input == '3':
-                print_yellow('Currently not implemented!')
-                continue
-            # Current player buys a Usurper's Chance card
-            elif input == '4':
+            elif choice == '2':
+                    print_yellow('Currently not implemented!')
+                    continue
+                # Current player uses a resource cards ability
+            elif choice == '3':
+                    print_yellow('Currently not implemented!')
+                    continue
+                # Current player buys a Usurper's Chance card
+            elif choice == '4':
                 if self.active_player.points < 7:
-                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! Need 7 points; you have ' + str(self.active_player.points) + ' points.')
+                    print_red('You do not have enough victory points to purchase a Usurpers\'s Chance card! You need 7 points; you have ' + str(self.active_player.points) + ' points.')
+                    print_yellow('Please choose another option.')
+                    continue
                 else:
                     print_white('Are you sure you want to buy a Usurper\'s Chance card for 7 victory points?')
-                    input = input('(y/n): ')
-                    if input == 'y':
+                    choice = input('(y/n): ')
+                    if choice == 'y':
                         self.active_player.points = self.active_player.points - 7
                         self.active_player.hand.append(Card(15, 'Usurper\'s Chance'))
-                    break
+                        break
+                    else:
+                        continue
 
     def questingPhase(self):
-        print_white(self.active_player)
-        print_white('Questing Phase: ' + str(self.active_player.name) + '\'s turn')
+        print_cyan('Questing Phase: ' + str(self.active_player.name) + '\'s turn')
 
         # Current player chooses 1
         while(True):
@@ -260,35 +263,42 @@ class Game:
             print_white('1) Spend a resource card and try to stop the calamity')
             print_white('2) Attempt to search for more resource cards')
             print_white('3) Activate a Usurper\'s Chance card and try to take the throne')
-            input = input('Choose a number: ')
+            choice = input('Choose a number: ')
 
             # Current player attempts to stop calamity by spending a resource card
-            if input == '1':
+            if choice == '1':
                 card = None
                 # Current player can only spend 1 resource card
                 while(True):
                     print_white('^^^Your hand^^^')
-                    for x in range(0, len(self.active_player.hand)):
-                        print_white(str(x + 1) + ') ' + self.active_player.hand[x].getName())
-                    input = input('Pick a card to use: ')
-                    card = int(input) - 1
+                    for i in range(0, len(self.active_player.hand)):
+                        print_white(str(i + 1) + ') ' + self.active_player.hand[i].getName())
+                    card_picked = input('Pick a card to use: ')
+                    if not card_picked.isdigit():
+                        print_red('Please enter a number!')
+                        continue
+                    if int(card_picked) < 1:
+                        print_red('Please pick a number greater than 0.')
+                        continue
+                    if int(card_picked) > len(self.active_player.hand):
+                        print_red('Please pick a number not greater than your hand size.')
+                        continue
+                    card = int(card_picked) - 1
                     if self.active_player.hand[card].getSuitNum() == -1:
                         print_red('Please choose a non-joker/non-Usurper\'s Chance card.')
-                        pass
-                    else:
-                        break
+                        continue
+
+                    break
 
                 # Current player roll 2d6+affinity for card suit
                 print_white('Rolling 2d6 plus your affinity to ' + self.active_player.hand[card].suit + '(+' + str(self.active_player.affinities[self.active_player.hand[card].getSuitNum()]) + ').')
                 die1 = random.randint(1, 6)
                 die2 = random.randint(1, 6)
                 roll = die1 + die2 + self.active_player.affinities[self.active_player.hand[card].getSuitNum()]
-                print_magenta(str(roll))
 
                 # 2-6 quest failed
                 if roll <= 6:
                     print_yellow('Quest failed! You rolled a ' + str(roll) + '. The calamity lives on')
-                    pass
                     # Other players can barter to save the quest from failing
                         # Other player spends a resource card to add resource card value+1 to current players failed roll
                         # Current player can accept, reject, or counteroffer
@@ -299,53 +309,69 @@ class Game:
 
                 # 7-9 quest success
                 elif roll > 6 and roll < 10:
+                    print_green('Success! You rolled a ' + str(roll) + ' and stopped the calamity.')
+                    self.calamity_stopped = True
                     while(True):
-                        self.calamity_stopped = True
-                        print_green('Success! You rolled a ' + str(roll) + ' and stopped the calamity.')
                         print_white('Choose a reward: ')
                         # Current player chooses 1
                         print_white('1) Gain 1 victory point')
                         print_white('2) Draw 2 resource cards')
-                        input = input('Which would you like?: ')
+                        choice = input('Which would you like?: ')
                         # Current player gains 1 victory points
-                        if input == '1':
+                        if choice == '1':
                             print_green('You gain 1 victory point.')
                             self.active_player.points = self.active_player.points + 1
                             break
                         # Current player draws 2 resource cards
-                        elif input == '2':
-                            print_green('You find 2 resource cards.')
-                            self.active_player.hand.append(self.deck.pop())
-                            self.active_player.hand.append(self.deck.pop())
+                        elif choice == '2':
+                            if len(self.deck) > 0:
+                                print_yellow('The deck is empty, sorry. Please choose another option.')
+                                continue
+                            elif len(self.deck) == 1:
+                                print_yellow('You only found one card. The deck is now empty.')
+                                self.active_player.hand.append(self.deck.pop())
+                            else:
+                                print_green('You find 2 resource cards.')
+                                for i in range(2):
+                                    self.active_player.hand.append(self.deck.pop())
                             break
                         else:
-                            print_red('Please choose reward 1 or reward 2.')
+                            print_red('Please choose a reward.')
+                            continue
 
                 # 10+ great success
                 elif roll >= 10:
                     self.calamity_stopped = True
                     print_green('Great Success!! You rolled a ' + str(roll) + ' and stopped the calamity.')
-                    print_white('You gained 1 victory point and found 1 resource card.')
                     # Current player gains 1 victory point and draws 1 resource card
-                    self.active_player.points = self.active_player.points + 1
-                    self.active_player.hand.append(self.deck.pop())
+                    if len(self.deck) > 0:
+                        print_white('You gained 1 victory point and found 1 resource card.')
+                        self.active_player.points = self.active_player.points + 1
+                        self.active_player.hand.append(self.deck.pop())
+                    else:
+                        print_white('You gained 1 victory point but could not draw a resource card. The deck is now empty.')
+                        self.active_player.points = self.active_player.points + 1
 
                 del self.active_player.hand[card]
                 break
 
-            # Current player attemps to search for more recource cards
-            elif input == '2':
+            # Current player attempts to search for more recource cards
+            elif choice == '2':
+                if len(self.deck) > 0:
+                    print_yellow('The deck is empty, sorry. Please choose another option.')
+                    continue
+
                 # Current player rolls a 2d6
                 print_white('Rolling 2d6.')
                 die1 = random.randint(1, 6)
                 die2 = random.randint(1, 6)
                 roll = die1 + die2
-                print_magenta(str(roll))
 
                 # 2-6
                 if roll <= 6:
                     print_red('You rolled a ' + str(roll) + ' and failed to find more resource cards.')
                     # Current player draws 0 resource cards
+                    pass
                 # 7-9
                 elif roll > 6 and roll < 10:
                     print_green('You rolled a ' + str(roll) + ' and found 1 resource card.')
@@ -353,52 +379,83 @@ class Game:
                     self.active_player.hand.append(self.deck.pop())
                 # 10+
                 elif roll >= 10:
-                    print_green('You rolled a ' + str(roll) + 'and found 2 resource cards!')
                     # Current player draws 2 resource cards
-                    self.active_player.hand.append(self.deck.pop())
-                    self.active_player.hand.append(self.deck.pop())
+                    if len(self.deck) == 1:
+                        print_yellow('You rolled a ' + str(roll) + ' but could only draw one resource card. The deck is now empty.')
+                        self.active_player.hand.append(self.deck.pop())
+                    else:
+                        print_green('You rolled a ' + str(roll) + 'and found 2 resource cards!')
+                        for i in range(2):
+                            self.active_player.hand.append(self.deck.pop())
 
                 break
 
             # Activate Usurper's Chance card
-            elif input == '3':
+            elif choice == '3':
                 if self.active_player.getHighestValueCard() < 15:
                     print_yellow('You do not have a Usurper\'s Chance card. Please choose a different option.')
                     continue
+
                 print_white('You attempt to take the throne!!')
                 # Current player must roll 8+ on 2d6+(Up to 3 victory points)
-                print_white('Would you like to wager any victory points to add a bonus to your roll? (up to +3). The victory points wagered will be consumed on use.')
-                input = input('(y/n): ')
                 wagered_vps = 0
-                if input == 'y':
-                    input = input('Hpw many victory points would you like to use? (up to 3): ')
-                    if input == 1:
-                        self.active_player.points = self.active_player.points - 1
-                        wagered_vps = wagered_vps + 1
-                    elif input == 2:
-                        self.active_player.points = self.active_player.points - 2
-                        wagered_vps = wagered_vps + 2
-                    elif input == 3:
-                        self.active_player.points = self.active_player.points - 3
-                        wagered_vps = wagered_vps + 3
+                while(True):
+                    print_white('Would you like to wager any victory points to add a bonus to your roll? (up to +3). Any victory points wagered will be consumed.')
+                    print_white('Current number of victory points: ' + str(self.active_player.points))
+                    choice = input('(y/n): ')
+                    if choice == 'y':
+                        choice = input('How many victory points would you like to wager? (up to 3): ')
+                        if choice == 1:
+                            if self.active_player.points < 1:
+                                print_yellow('You do not have at least 1 victory point.')
+                                continue
+                            else:
+                                self.active_player.points = self.active_player.points - 1
+                                wagered_vps = wagered_vps + 1
+                                break
+                        elif choice == 2:
+                            if self.active_player.points < 2:
+                                print_yellow('You do not have at least 2 victory points.')
+                                continue
+                            else:
+                                self.active_player.points = self.active_player.points - 2
+                                wagered_vps = wagered_vps + 2
+                                break
+                        elif choice == 3:
+                            if self.active_player.points < 3:
+                                print_yellow('You do not have at least 3 victory points.')
+                                continue
+                            else:
+                                self.active_player.points = self.active_player.points - 3
+                                wagered_vps = wagered_vps + 3
+                                break
+                        else:
+                            print_red('Please enter a number between 1 and 3 if you would like to wager victory points.')
+
                     else:
-                        print_red('Assigning extra victory points to Usurper\'s Chance is broken!')
+                        print_white('You wager no victory points.')
+                        break
 
                 print_white('Rolling 2d6 plus any wagered victory points' + '(+' + str(wagered_vps) + ').')
                 die1 = random.randint(1, 6)
                 die2 = random.randint(1, 6)
                 roll = die1 + die2 + wagered_vps
-                print_magenta(str(roll))
 
                 # 2-7
                 if roll <= 7:
                     print_red('You failed to take the throne! You rolled a ' + str(roll) + '.')
-                    print_white('All other players get to draw one resource card.')
+                    print_white('All other players get to draw 1 resource card.')
+                    # If not enough cards for everyone, start endgame
+                    if len(self.deck) < self.num_players - 1:
+                        print_yellow('Not everyone can draw a card. Proceeding to the endgame.')
+                        self.start_endgame = True
                     # All other players draw 1 resource card
-                    for player in self.players:
-                        if self.active_player.p_num == player.p_num:
-                            pass
-                        player.hand.append(self.deck.pop())
+                    else:
+                        for player in self.players:
+                            if self.active_player.p_num == player.p_num:
+                                continue
+                            player.hand.append(self.deck.pop())
+
                     # Current player discards the played Usurper's Chance card
                     for card in self.active_player.hand:
                         if card.value == 15:
@@ -412,14 +469,55 @@ class Game:
 
                 break
 
-    def cleanupPhase(self):
-        print_white(self.active_player)
-        tempy = input('block')
-        # Check to see if the game has been won
-        # If the calamity was stopped, roll a d100 for new calamity; otherwise pass
-        # If the deck is empty and all players hands are empty, the player with the most victory points wins
-            # Usurper Chance cards count for 10 victory points
+    def upkeepPhase(self):
+        print_cyan('Upkeep Phase')
 
+        # Check to see if the game has been won
+        if self.game_over is True:
+            print_white('Thanks for playing!')
+            sys.exit()
+
+        # If the calamity was stopped, roll a d100 for new calamity; otherwise pass
+        if self.calamity_stopped is True:
+            print_white('A new calamity arises.')
+            num = random.randint(1, 100)
+            self.calamity = num
+            self.calamity_stopped = False
+
+        # If the deck is empty and all players hands are empty, end the game
+        if (len(self.deck) == 0 and len([1 for hand in self.players.hand if len(hand)]) == 0) or (self.start_endgame is True):
+            # Start the point tally; winner is determined by the most vicotry points
+            final_point_totals = []
+            for player in self.players:
+                final_points = 0
+                # Usurper Chance cards are worth 10 victory points
+                while player.getHighestValueCard() == 15:
+                    for card in player.hand:
+                        if card.value == 15:
+                            del self.player.hand[card]
+                            final_points = final_points + 10
+
+                final_points = final_points + player.points
+                temp = (player.p_num, final_points)
+                final_point_totals.append(temp)
+
+            # Determine winner
+            winner_buf = []
+            for i, j in enumerate(final_point_totals):
+                if j[1] == max(final_point_totals, key=itemgetter(1))[1]:
+                    winner_buf.append(j)
+            if len(winner_buf) == 1:
+                print_green('The winner is ' + str(self.players[winner_buf[0][0]].getName()) + 'with ' + str(winner_buf[0][1]) + ' victory points!')
+            elif len(winner_buf) > 1:
+                print_green('There is a tie!')
+                print_green('The winners with ' + str(winner_buf[0][0]) + ' victory points are: ')
+                for p_num, points in winner_buf:
+                    print_green(str(self.players[p_num].getName()))
+            else:
+                print_red('Winner determination is broken!')
+
+            print_white('Thanks for playing!')
+            sys.exit()
 
     '''
     UTILITY FUNCTIONS
@@ -513,7 +611,7 @@ class Card:
         else:
             print('ERROR: Something is fucked in the Card Class getName() function')
 
-    # Returns the correct index number for the Player affinity array; if not a normal card, returns -1
+    # Returns the correct index number for the Player affinity array; if not a suited card, returns -1
     def getSuitNum(self):
         if self.suit == 'Spade':
             return 0
