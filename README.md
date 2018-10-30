@@ -1,4 +1,4 @@
-# HousesOfCards
+# HousesOfCardsPy
 Helping a friend write a card game
 
 
