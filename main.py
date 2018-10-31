@@ -26,7 +26,7 @@ class Game:
         self.player_going_first = None
 
         # Game variables
-        self.max_players = 4
+        self.max_players = 6
         self.active_player = None  # Player object
         self.phase = None  # 0=Setup; 1=Plotting; 2=Questing; 3=Cleanup
         self.deck = []  # Array of Card objects
@@ -87,12 +87,12 @@ class Game:
     def initGame(self):
         num_players = None
         while(True):
-            num_players = input('Enter number of players(1-4): ')
+            num_players = input('Enter number of players(2-6): ')
             if not num_players.isdigit():
                 print_red('Please enter a number!')
                 continue
-            if int(num_players) < 1:
-                print_red('Please pick a number greater than 0.')
+            if int(num_players) < 2:
+                print_red('Please pick a number greater than 1.')
                 continue
             if int(num_players) > self.max_players:
                 print_red('The maximum number of players is 4. Please pick a smaller amount of players.')
