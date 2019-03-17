@@ -1,8 +1,13 @@
 # LINK TO PDF:   https://www.dropbox.com/s/tn5lg8jbl8ytmrt/Houses%20of%20Cards.docx?dl=0
 
 import sys
+import logging
 import random
 from operator import itemgetter
+
+
+# Setting up logger
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class Game:
@@ -35,16 +40,6 @@ class Game:
 
         # Game Loop
         while True:
-            """
-            print_grey('yo this is a ' + str(10) + ' sentence')
-            print_red('yo this is a ' + str(10) + ' sentence')
-            print_green('yo this is a ' + str(10) + ' sentence')
-            print_yellow('yo this is a ' + str(10) + ' sentence')
-            print_blue('yo this is a ' + str(10) + ' sentence')
-            print_magenta('yo this is a ' + str(10) + ' sentence')
-            print_cyan('yo this is a ' + str(10) + ' sentence')
-            print_white('yo this is a ' + str(10) + ' sentence')
-            """
 
             # PLOTTING PHASE
             if self.phase == 1:
@@ -56,7 +51,7 @@ class Game:
             elif self.phase == 3:
                 self.upkeepPhase()
             else:
-                print('ERROR: Phase changing is broken!')
+                logging.error('ERROR: Phase changing is broken!')
 
             # Set current phase
             if self.phase == 3:
@@ -82,7 +77,7 @@ class Game:
                 print('Please pick a number greater than 1.')
                 continue
             if int(num_players) > self.max_players:
-                print('The maximum number of players is 4. Please pick a smaller amount of players.')
+                print('The maximum number of players is 6. Please pick a smaller amount of players.')
                 continue
 
             break
@@ -111,7 +106,7 @@ class Game:
 
         # Replace jokers
         while min(low_num_buf, key=itemgetter(1))[1] < 2:
-            print('Joker detected!')
+            logging.debug('Joker detected!')
             for player in self.players:
                 for card in player.hand:
                     if card.value < 2:
@@ -134,7 +129,7 @@ class Game:
                 elif card.suit == 'Diamond':
                     player.affinities[3] = player.affinities[3] + 1
                 else:
-                    print('ERROR: Affinity attribution is broken!')
+                    logging.error('ERROR: Affinity attribution is broken!')
 
         # The player with the highest value card drawn goes first
         high_num_buf = []
@@ -153,7 +148,7 @@ class Game:
 
         # Keep drawing to break ties
         if is_tie:
-            print('Tie detected!')
+            logging.debug('Tie detected!')
             while self.player_going_first is None:
                 for player in self.players:
                     player.hand = []
@@ -344,7 +339,7 @@ class Game:
 
             # Current player attempts to search for more recource cards
             elif choice == '2':
-                if len(self.deck) > 0:
+                if len(self.deck) <= 0:
                     print('The deck is empty, sorry. Please choose another option.')
                     continue
 
@@ -501,7 +496,7 @@ class Game:
                 for p_num, points in winner_buf:
                     print(str(self.players[p_num].getName()))
             else:
-                print('Winner determination is broken!')
+                logging.error('Winner determination is broken!')
 
             print('Thanks for playing!')
             sys.exit()
@@ -596,7 +591,7 @@ class Card:
         elif self.value == 15:
             return 'Usurper\'s Chance'
         else:
-            print('ERROR: Something is fucked in the Card Class getName() function')
+            logging.error('ERROR: Something is fucked in the Card Class getName() function')
 
     # Returns the correct index number for the Player affinity array; if not a suited card, returns -1
     def getSuitNum(self):
