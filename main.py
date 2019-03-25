@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import json
 import random
 from operator import itemgetter
 
@@ -13,19 +14,20 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class Game:
     def __init__(self):
         # Meta variables
-        self.num_players = None
-        self.players = []  # Array of Player objects
-        self.player_going_first = None
-
-        # Game variables
         self.max_players = 6
+        self.player_going_first = None
         self.active_player = None  # Player object
         self.phase = None  # 0=Setup; 1=Plotting; 2=Questing; 3=Upkeep
-        self.deck = []  # Array of Card objects
-        self.calamity = None  # 1-100
         self.calamity_stopped = False
         self.start_endgame = False
         self.game_over = False
+
+        # Game variables
+        self.num_players = None
+        self.players = []  # Array of Player objects
+        self.calamities = []
+        self.calamity = None  # 1-100
+        self.deck = []  # Array of Card objects
 
     '''
     PRIMARY FUNCTIONS
@@ -67,6 +69,7 @@ class Game:
                 self.phase = self.phase + 1
 
     def initGame(self):
+        # Get number of players
         num_players = None
         while(True):
             num_players = input('Enter number of players(2-6): ')
@@ -82,13 +85,18 @@ class Game:
 
             break
 
+        # Create player objects
         self.num_players = int(num_players)
         for i in range(0, self.num_players):
             name = input('Enter name for Player ' + str(i + 1) + ':')
             player = Player(name, i, [0, 0, 0, 0], 0, [])
             self.players.append(player)
 
-        self.dealDeck()
+        # Load list of calamities
+        self.loadCalamities()
+
+        # Create and suffle the deck
+        self.createDeck()
         self.shuffleDeck()
 
     def setupPhase(self):
@@ -181,13 +189,17 @@ class Game:
 
         # Shuffle the deck
         self.deck = []
-        self.dealDeck()
+        self.createDeck()
         self.shuffleDeck()
 
         # Each player draws 5 cards
         for player in self.players:
             for i in range(5):
                 player.hand.append(self.deck.pop())
+
+        # Roll first calamity
+        num = random.randint(1, 100)
+        self.calamity = num
 
         # Set phase
         self.phase = 1
@@ -505,7 +517,15 @@ class Game:
     UTILITY FUNCTIONS
     '''
 
-    def dealDeck(self):
+    def loadCalamities(self):
+        with open("calamities.json", "r") as f:
+            jsondata = json.load(f)
+            for calamity in jsondata:
+                c = Calamity(calamity["number"], calamity["name"], calamity["description"])
+                self.calamities.append(c)
+        f.close()
+
+    def createDeck(self):
         for suit in ('Spade', 'Heart', 'Club', 'Diamond'):
             for value in range(2, 15):
                 card = Card(value, suit)
@@ -529,6 +549,19 @@ class Game:
         for player in self.players:
             player.getName()
         return
+
+
+class Calamity:
+    def __init__(self, number, name, desc):
+        self.number = number
+        self.name = name
+        self.description = desc
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class Player:
